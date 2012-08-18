@@ -4,7 +4,7 @@ var util = require('util');
 
 buster.testCase("GameObject", {
 	"Basic operations": function() {
-		var obj = new gameObject.GameObject();
-		assert.equals(obj.getPosition().x, 20);
+		var obj = new gameObject.GameObject(10, 0, 0);
+		assert.equals(obj.getPosition().x, 10);
 	}
 });
