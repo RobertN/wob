@@ -6,3 +6,11 @@ html, body {
 canvas {
 	vertical-align: bottom;
 }
+
+#debug {
+	position: absolute;
+	z-index: 10;
+	background: #eee;
+	padding: 10px;
+	font-size: 10px;
+}
