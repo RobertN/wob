@@ -14,16 +14,22 @@ function init() {
 	//
 	// Create a ball
 	//
-	var sphere = new THREE.SphereGeometry(60, 20, 20);
-	var sphereMesh = new THREE.Mesh(sphere, material);
-	createGameObject({ 'id': 'ball', 'isBall': true }, sphereMesh);
+	var geometry = new THREE.SphereGeometry(60, 20, 20);
+	var mesh = new THREE.Mesh(geometry, material);
+	createGameObject({
+		'id': 'ball',
+		'isBall': true,
+		'collisionCallback': function() {
+			debug('ball collision');
+		}
+	}, mesh);
 
 	//
 	// Create a mesh
 	//
-	var cube = new THREE.CubeGeometry(200, 200, 200);
-	var cubeMesh = new THREE.Mesh(cube, material);
-	createGameObject({ 'id': 'box' }, cubeMesh);
+	var geometry = new THREE.CubeGeometry(200, 200, 200);
+	var mesh = new THREE.Mesh(geometry, material);
+	createGameObject({ 'id': 'box' }, mesh);
 
 	renderer = new THREE.WebGLRenderer({ antialias: true });
 	renderer.setSize(window.innerWidth, window.innerHeight);
@@ -35,7 +41,11 @@ function init() {
 function animate() {
 
 	requestAnimationFrame(animate);
+	detectCollisions(gameObjects);
 	renderer.render(scene, camera);
+	if (debug) {
+		document.getElementById('debug').innerHTML = debugMessages.join('<br>');
+	}
 
 }
 
@@ -63,7 +73,7 @@ function createGameObject(o, meshObject) {
 		'id': 'defaultObject',
 		'isBall': false,
 		'mesh' :meshObject,
-		'collision': true,
+		'canCollide': true,
 		'collisionCallback': null,
 		'movable': false,
 		'willCollideAt': false
@@ -99,6 +109,13 @@ function getGameObjectById(id) {
 			return gameObjects[i];
 		}
 	}
+}
+
+function debug(msg) {
+	if (typeof debugMessages == 'undefined') {
+		debugMessages = [];
+	}
+	debugMessages.unshift(msg);
 }
 
 window.onload = function() {
