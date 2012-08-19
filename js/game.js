@@ -1,9 +1,13 @@
-var	scene,
-	renderer,
-	levelBaseURL = 'loadLevel.php';
+function Game() {
+	this.scene = {};
+	this.renderer = {};
+	this.levelBaseURL = 'loadLevel.php';
+	this.lastTime = 0;
+	this.gameObjects = [];
+	this.debug = true;
+}
 
-function init() {
-
+Game.prototype.init = function() {
 	camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 1000);
 	camera.position.z = 1000;
 
@@ -16,7 +20,7 @@ function init() {
 	//
 	var geometry = new THREE.SphereGeometry(60, 20, 20);
 	var mesh = new THREE.Mesh(geometry, material);
-	createGameObject({
+	this.createGameObject({
 		'id': 'ball',
 		'isBall': true,
 		'collisionCallback': function() {
@@ -27,29 +31,60 @@ function init() {
 	//
 	// Create a mesh
 	//
-	var geometry = new THREE.CubeGeometry(200, 200, 200);
-	var mesh = new THREE.Mesh(geometry, material);
-	createGameObject({ 'id': 'box' }, mesh);
+	var cube = new THREE.CubeGeometry(200, 200, 200);
+	var cubeMesh = new THREE.Mesh(cube, material);
+	cubeMesh.position.x = -200;
+	this.createGameObject({ 'id': 'box' }, cubeMesh);
+
+	var movableCubeMesh = new THREE.Mesh(cube, material);
+	movableCubeMesh.position.x = 200;
+	movableCubeMesh.position.y = 0;
+	this.createGameObject({ 'id': 'movable_box', 'movable': true }, movableCubeMesh);
 
 	renderer = new THREE.WebGLRenderer({ antialias: true });
 	renderer.setSize(window.innerWidth, window.innerHeight);
 
 	document.body.appendChild(renderer.domElement);
-
 }
 
-function animate() {
+Game.prototype.calculateTimeStep = function() {
+	var timestep = 0;
 
-	requestAnimationFrame(animate);
-	detectCollisions(gameObjects);
-	renderer.render(scene, camera);
-	if (debug) {
-		document.getElementById('debug').innerHTML = debugMessages.join('<br>');
+	if (this.lastTime != 0) {
+		var currentTime = new Date().getTime();
+		timestep = (currentTime - this.lastTime) / 1000;
+	} else {
+		this.lastTime = new Date().getTime();
 	}
 
+	return timestep;
 }
 
-function loadLevel(levelID) {
+Game.prototype.mainLoop = function() {
+	var timestep = this.calculateTimeStep();	
+
+	for (var i = 0; i < this.gameObjects.length; i++) {
+		if (this.gameObjects[i].movable) {
+			this.gameObjects[i] = applyGravity(this.gameObjects[i], timestep);
+		}
+
+		this.gameObjects[i].mesh.position.x += this.gameObjects[i].velocity.x * timestep;
+		this.gameObjects[i].mesh.position.y -= this.gameObjects[i].velocity.y * timestep;
+	}
+
+	detectCollisions(this.gameObjects);
+
+	renderer.render(scene, camera);
+
+	//
+	// Debug output
+	//
+	if (this.debug && typeof this.debugMessages != 'undefined') {
+		document.getElementById('debug').innerHTML = this.debugMessages.join('<br>');
+	}
+}
+
+Game.prototype.loadLevel = function(levelID) {
 	var xhr = new XMLHttpRequest();
 	xhr.onreadystatechange = function() {
 		if (xhr.readyState == 4 && xhr.status == 200) {
@@ -64,7 +99,7 @@ function loadLevel(levelID) {
 	xhr.send();
 }
 
-function createGameObject(o, meshObject) {
+Game.prototype.createGameObject = function(o, meshObject) {
 
 	//
 	// Setup default object
@@ -76,7 +111,8 @@ function createGameObject(o, meshObject) {
 		'canCollide': true,
 		'collisionCallback': null,
 		'movable': false,
-		'willCollideAt': false
+		'willCollideAt': false,
+		'velocity': {'x': 0, 'y': 0}
 	}
 
 	//
@@ -91,40 +127,43 @@ function createGameObject(o, meshObject) {
 	//
 	// Add game object to the list of game objects
 	//
-	if (typeof gameObjects == 'undefined') {
-		gameObjects = [];
-	}
-	gameObjects[gameObjects.length] = gameObject;
+	this.gameObjects[this.gameObjects.length] = gameObject;
 
 	//
 	// Add mesh object to scene
 	//
-	scene.add(gameObjects[gameObjects.length-1].mesh);
+	scene.add(this.gameObjects[this.gameObjects.length-1].mesh);
 
 }
 
-function getGameObjectById(id) {
-	for (var i = 0; i < gameObjects.length; i++) {
-		if (gameObjects[i].id == id) {
-			return gameObjects[i];
+Game.prototype.getGameObjectById = function(id) {
+	for (var i = 0; i < this.gameObjects.length; i++) {
+		if (this.gameObjects[i].id == id) {
+			return this.gameObjects[i];
 		}
 	}
 }
 
-function debug(msg) {
-	if (typeof debugMessages == 'undefined') {
-		debugMessages = [];
+Game.prototype.debug = function(msg) {
+	if (typeof this.debugMessages == 'undefined') {
+		this.debugMessages = [];
 	}
-	debugMessages.unshift(msg);
+	this.debugMessages.unshift(msg);
+}
+
+function update() {
+	window.game.mainLoop();
+	requestAnimationFrame(update);
 }
 
 window.onload = function() {
-	init();
-	animate();
+	window.game = new Game();
+	game.init();
+	update();
 }
 
 document.addEventListener('keydown', function(e) {
-	var cube = getGameObjectById('box');
+	var cube = window.game.getGameObjectById('box');
 	switch (e.keyCode) {
 		// Up
 		case 38:
@@ -142,6 +181,5 @@ document.addEventListener('keydown', function(e) {
 		case 39:
 			cube.mesh.position.x += 10;
 			break;
-			
 	}
 }, false);

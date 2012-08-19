@@ -1,4 +1,6 @@
-exports.GameObject = function(x, y, z)
+exports = {};
+
+GameObject = function(x, y, z)
 {
 	this.pos_x = x;
 	this.pos_y = y;
@@ -9,12 +11,14 @@ exports.GameObject = function(x, y, z)
 	this.vel_z = 0;
 }
 
-exports.GameObject.prototype.getPosition = function()
+GameObject.prototype.getPosition = function()
 {
 	return {x: this.pos_x, y: this.pos_y, z: this.pos_z};
 }
 
-exports.GameObject.prototype.getVelocity = function() 
+GameObject.prototype.getVelocity = function() 
 {
 	return {x: vel_x, y: vel_y, z: vel_z};
 }
+
+exports.GameObject = GameObject;
